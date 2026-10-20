@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 420" role="img" aria-labelledby="title desc">
+  <title id="title">Aperçu de l'horloge et du chronomètre</title>
+  <desc id="desc">Deux écrans noirs : heure 18:12 en blanc, puis chronomètre 00:12.4 avec pause et reset.</desc>
+  <rect width="1080" height="420" rx="28" fill="#111111"/>
+  <text x="45" y="42" fill="#bcbcbc" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2">HORLOGE</text>
+  <text x="555" y="42" fill="#bcbcbc" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2">CHRONOMÈTRE</text>
+  <rect x="38" y="62" width="480" height="320" rx="12" fill="#000000" stroke="#343434" stroke-width="2"/>
+  <rect x="548" y="62" width="480" height="320" rx="12" fill="#000000" stroke="#343434" stroke-width="2"/>
+  <text x="278" y="250" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif" font-size="130" font-weight="900" letter-spacing="-7">18:12</text>
+  <circle cx="270" cy="366" r="3" fill="#ffffff"/>
+  <circle cx="286" cy="366" r="3" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="788" y="203" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif" font-size="86" font-weight="900" letter-spacing="-4">00:12.4</text>
+  <rect x="685" y="264" width="9" height="34" fill="#ffffff"/>
+  <rect x="703" y="264" width="9" height="34" fill="#ffffff"/>
+  <text x="700" y="335" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700">PAUSE</text>
+  <path d="M879 280a22 22 0 1 1 -7 -16" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M871 258l17 5-12 13" fill="#ffffff"/>
+  <text x="878" y="335" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700">RESET</text>
+  <circle cx="780" cy="366" r="3" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <circle cx="796" cy="366" r="3" fill="#ffffff"/>
+</svg>

@@ -1,0 +1,7 @@
+secrets.yaml
+.esphome/
+.venv/
+.DS_Store
+*.log
+*.bin
+*.elf
