@@ -12,7 +12,7 @@ Une horloge et un chronomètre minimalistes pour l'écran tactile **Guition JC32
 
 - **Horloge** au format 24 h (`18:12`), synchronisée par Wi-Fi avec le fuseau `Europe/Paris` et les changements d'heure été/hiver.
 - **Chronomètre** avec START, PAUSE, reprise et RESET. Le temps reste mémorisé quand on revient à la page horloge, tant que l'appareil reste alimenté.
-- **Deux pages tactiles** : balayage vers la droite pour ouvrir le chrono, vers la gauche pour revenir à l'horloge. Les petits points en bas permettent aussi de changer de page.
+- **Deux pages tactiles** : balayage de droite vers la gauche pour ouvrir le chrono, de gauche vers la droite pour revenir à l'horloge. Les petits points en bas permettent aussi de changer de page.
 - **Mode nuit** : rétroéclairage à 2 % de 00:00 à 08:29, puis à 100 % dès 08:30. Au démarrage, il reste faible jusqu'à la synchronisation de l'heure.
 - Interface blanche sur fond noir, sans animation de transition.
 
@@ -67,8 +67,8 @@ Renseignez `secrets.yaml` avant la dernière commande. Sous Windows, si l'instal
 
 | Geste ou bouton | Action |
 | --- | --- |
-| Balayer vers la droite | Ouvrir le chronomètre |
-| Balayer vers la gauche | Revenir à l'horloge |
+| Balayer de droite vers la gauche | Ouvrir le chronomètre |
+| Balayer de gauche vers la droite | Revenir à l'horloge |
 | Toucher un petit point | Aller directement à cette page |
 | START | Lancer ou reprendre le chronomètre |
 | PAUSE | Arrêter temporairement le chronomètre |

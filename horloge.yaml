@@ -248,8 +248,8 @@ touchscreen:
           const int dx = id(touche_fin_x) - id(touche_depart_x);
           const int dy = id(touche_fin_y) - id(touche_depart_y);
           if (abs(dx) >= 80 && abs(dx) > abs(dy) * 3 / 2) {
-            // Le contenu suit le doigt : droite vers chrono, gauche vers horloge.
-            id(page_active) = dx > 0 ? 1 : 0;
+            // Balayer de droite à gauche ouvre la page située à droite.
+            id(page_active) = dx < 0 ? 1 : 0;
           } else if (abs(dx) < 100 && abs(dy) < 100) {
             const int x = id(touche_fin_x);
             const int y = id(touche_fin_y);
