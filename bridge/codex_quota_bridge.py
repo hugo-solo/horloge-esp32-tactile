@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Expose only Codex quota percentages and reset times to a local ESP32.
+"""Expose Codex quotas and local Spotify playback to a local ESP32.
 
 The Codex CLI keeps account credentials on the host VM. They are never sent to the
 ESP32 or returned by this HTTP server.
@@ -140,19 +140,62 @@ class QuotaCache:
             return self.value
 
 
-def handler_factory(token: str, cache: QuotaCache):
+SPOTIFY_SCRIPT = """
+if application "Spotify" is running then
+    tell application "Spotify"
+        if player state is playing then return name of current track as text
+    end tell
+end if
+return ""
+"""
+
+
+def spotify_now_playing() -> dict:
+    if sys.platform != "darwin":
+        return {"playing": False, "title": ""}
+    result = subprocess.run(
+        ["osascript", "-e", SPOTIFY_SCRIPT],
+        capture_output=True,
+        text=True,
+        timeout=5,
+        check=True,
+    )
+    title = " ".join(result.stdout.split()).strip()
+    if len(title) > 34:
+        title = title[:31].rstrip() + "..."
+    return {"playing": bool(title), "title": title}
+
+
+class SpotifyCache:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.value: dict | None = None
+        self.updated_at = 0.0
+
+    def get(self) -> dict:
+        with self.lock:
+            if self.value is None or time.monotonic() - self.updated_at >= 4:
+                self.value = spotify_now_playing()
+                self.updated_at = time.monotonic()
+            return self.value
+
+
+def handler_factory(token: str, cache: QuotaCache, spotify: SpotifyCache):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             request = urlsplit(self.path)
             supplied = parse_qs(request.query).get("token", [""])[0]
-            if request.path != "/quota" or not secrets.compare_digest(supplied, token):
+            if request.path not in ("/quota", "/now-playing") or not secrets.compare_digest(
+                supplied, token
+            ):
                 self.send_error(404)
                 return
             try:
-                data = json.dumps(cache.get(), separators=(",", ":")).encode()
+                result = cache.get() if request.path == "/quota" else spotify.get()
+                data = json.dumps(result, separators=(",", ":")).encode()
             except Exception as error:
-                print(f"Lecture Codex impossible : {type(error).__name__}", file=sys.stderr)
-                self.send_error(503, "Quota temporairement indisponible")
+                print(f"Lecture locale impossible : {type(error).__name__}", file=sys.stderr)
+                self.send_error(503, "Données temporairement indisponibles")
                 return
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -179,7 +222,8 @@ def main() -> None:
         parser.error("la commande codex est introuvable")
     token = read_or_create_token(args.token_file)
     server = ThreadingHTTPServer(
-        (args.bind, args.port), handler_factory(token, QuotaCache(args.codex))
+        (args.bind, args.port),
+        handler_factory(token, QuotaCache(args.codex), SpotifyCache()),
     )
     print(f"Bridge Codex prêt sur {args.bind}:{args.port}", flush=True)
     server.serve_forever()

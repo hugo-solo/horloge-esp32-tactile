@@ -16,7 +16,7 @@ Une horloge et un chronomètre minimalistes pour l'écran tactile **Guition JC32
 - **Mode nuit** : rétroéclairage à 2 % de 00:00 à 08:29, puis à 100 % dès 08:30. Au démarrage, il reste faible jusqu'à la synchronisation de l'heure.
 - Interface blanche sur fond noir, sans animation de transition.
 
-Une [variante à trois pages](bridge/README.md) ajoute un petit indicateur Codex en bas à gauche de l'horloge : logo, pourcentage utilisé sur la session de 5 heures et temps avant le reset. Sa page « CODEX » affiche aussi le pourcentage restant sur 5 heures et le quota hebdomadaire. Elle utilise un petit relais sur un Mac pour l'essai, puis sur un serveur local allumé en permanence ; la configuration principale à deux pages n'en a pas besoin.
+Une [variante à trois pages](bridge/README.md) ajoute un petit indicateur Codex en bas à gauche de l'horloge : logo, pourcentage utilisé sur la session de 5 heures et temps avant le reset. Elle affiche également le titre Spotify au-dessus de l'heure pendant la lecture sur le Mac. Sa page « CODEX » affiche le pourcentage restant sur 5 heures et le quota hebdomadaire. Elle utilise un petit relais sur un Mac pour l'essai, puis sur un serveur local allumé en permanence pour les quotas ; la configuration principale à deux pages n'en a pas besoin.
 
 ## Matériel
 

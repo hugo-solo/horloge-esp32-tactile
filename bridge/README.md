@@ -1,6 +1,6 @@
-# Relais Codex pour la page de quotas
+# Relais local Codex et Spotify
 
-L'écran ESP32 ne conserve **aucun identifiant OpenAI**. Une petite VM Debian ou Ubuntu, allumée sur le même réseau local, lit les limites du compte connecté avec `codex app-server`. Le programme [`codex_quota_bridge.py`](codex_quota_bridge.py) transmet uniquement les pourcentages restants et les dates de remise à zéro.
+L'écran ESP32 ne conserve **aucun identifiant OpenAI ou Spotify**. Une petite VM Debian ou Ubuntu, allumée sur le même réseau local, lit les limites du compte connecté avec `codex app-server`. Le programme [`codex_quota_bridge.py`](codex_quota_bridge.py) transmet uniquement les pourcentages restants et les dates de remise à zéro. Quand il tourne sur macOS, il peut aussi lire le titre joué dans l'application Spotify locale.
 
 Une clé de l'API OpenAI ne donne pas accès au quota de l'abonnement Codex : il faut connecter **Codex CLI avec le même compte ChatGPT** que celui utilisé dans l'application.
 
@@ -13,7 +13,7 @@ codex login status
 python3 bridge/codex_quota_bridge.py --bind IP_LOCALE_DU_MAC
 ```
 
-Le relais crée `.codex-bridge/token`. Renseignez `codex_bridge_url` dans `secrets.yaml` avec l'IP locale du Mac et ce jeton, puis flashez `horloge-codex.yaml`. Le Mac doit rester allumé pendant cet essai. Plus tard, vous pourrez déplacer le relais sur la VM et reflasher l'écran avec sa nouvelle URL.
+Le relais crée `.codex-bridge/token`. Renseignez `codex_bridge_url` et `spotify_now_playing_url` dans `secrets.yaml` avec l'IP locale du Mac et ce jeton, puis flashez `horloge-codex.yaml`. La seconde URL utilise le chemin `/now-playing`. Quand Spotify joue sur le Mac, le titre apparaît au-dessus de l'heure ; il disparaît à la pause. macOS peut demander l'autorisation de lire l'état de Spotify la première fois. Le Mac doit rester allumé pendant cet essai. Plus tard, vous pourrez déplacer le relais Codex sur la VM et reflasher l'écran avec sa nouvelle URL. Pour continuer à afficher la lecture du Mac, laissez `spotify_now_playing_url` pointée vers celui-ci.
 
 ## Sur la VM Debian/Ubuntu
 

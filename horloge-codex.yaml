@@ -22,6 +22,7 @@ wifi:
   on_connect:
     then:
       - script.execute: rafraichir_quota
+      - script.execute: rafraichir_spotify
 
 logger:
 
@@ -100,6 +101,32 @@ script:
               - lambda: |-
                   id(quota_disponible) = false;
                   if (id(page_active) == 2) id(ecran).update();
+  - id: rafraichir_spotify
+    mode: single
+    then:
+      - http_request.get:
+          url: !secret spotify_now_playing_url
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool ok = false;
+                  if (response->status_code == 200) {
+                    ok = json::parse_json(body, [](JsonObject root) -> bool {
+                      if (root["playing"].isNull() || root["title"].isNull())
+                        return false;
+                      id(spotify_actif) = root["playing"].as<bool>();
+                      id(spotify_titre) = root["title"].as<std::string>();
+                      return true;
+                    });
+                  }
+                  if (!ok) id(spotify_actif) = false;
+                  if (id(page_active) == 0) id(ecran).update();
+          on_error:
+            then:
+              - lambda: |-
+                  id(spotify_actif) = false;
+                  if (id(page_active) == 0) id(ecran).update();
 
 globals:
   - id: page_active
@@ -138,6 +165,12 @@ globals:
   - id: quota_restant_semaine
     type: int
     initial_value: '-1'
+  - id: spotify_actif
+    type: bool
+    initial_value: 'false'
+  - id: spotify_titre
+    type: std::string
+    initial_value: '""'
 
 interval:
   - interval: 100ms
@@ -150,6 +183,9 @@ interval:
   - interval: 60s
     then:
       - script.execute: rafraichir_quota
+  - interval: 10s
+    then:
+      - script.execute: rafraichir_spotify
 
 font:
   - file:
@@ -208,6 +244,22 @@ font:
     size: 18
     bpp: 4
     glyphs: " 0123456789%usedhm-"
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 700
+    id: titre_spotify_grand
+    size: 28
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 700
+    id: titre_spotify_petit
+    size: 21
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
 
 image:
   - file: assets/openai-white-monoblossom.svg
@@ -239,6 +291,18 @@ display:
           it.print(centre_x, it.get_height() / 2 - 6,
                    id(chiffres_gras), Color::WHITE,
                    TextAlign::CENTER, "--:--");
+        }
+
+        if (id(spotify_actif) && !id(spotify_titre).empty()) {
+          const char *titre = id(spotify_titre).c_str();
+          int x1, y1, largeur_titre, hauteur_titre;
+          it.get_text_bounds(centre_x, 38, titre, id(titre_spotify_grand),
+                             TextAlign::CENTER, &x1, &y1,
+                             &largeur_titre, &hauteur_titre);
+          auto police = largeur_titre <= largeur - 24
+              ? id(titre_spotify_grand) : id(titre_spotify_petit);
+          it.print(centre_x, 38, police, Color::WHITE,
+                   TextAlign::CENTER, titre);
         }
 
         if (id(quota_disponible) && maintenant.is_valid()) {
