@@ -200,6 +200,21 @@ font:
     size: 27
     bpp: 4
     glyphs: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:%-"
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 700
+    id: texte_statut_codex
+    size: 18
+    bpp: 4
+    glyphs: " 0123456789%usedhm-"
+
+image:
+  - file: assets/openai-white-monoblossom.svg
+    id: logo_openai
+    type: RGB565
+    transparency: alpha_channel
+    resize: 18x18
 
 display:
   - platform: mipi_spi
@@ -224,6 +239,20 @@ display:
           it.print(centre_x, it.get_height() / 2 - 6,
                    id(chiffres_gras), Color::WHITE,
                    TextAlign::CENTER, "--:--");
+        }
+
+        if (id(quota_disponible) && maintenant.is_valid()) {
+          int64_t secondes = (int64_t) id(quota_reset_5h) - maintenant.timestamp;
+          if (secondes < 0) secondes = 0;
+          uint32_t minutes = ((uint32_t) secondes + 59) / 60;
+          char statut[32];
+          snprintf(statut, sizeof(statut), "%d%% used %luh %02lum",
+                   100 - id(quota_restant_5h),
+                   (unsigned long) (minutes / 60),
+                   (unsigned long) (minutes % 60));
+          it.image(12, 291, id(logo_openai));
+          it.print(38, 290, id(texte_statut_codex), Color::WHITE,
+                   TextAlign::TOP_LEFT, statut);
         }
       };
 

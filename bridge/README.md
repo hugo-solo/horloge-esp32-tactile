@@ -4,6 +4,17 @@ L'écran ESP32 ne conserve **aucun identifiant OpenAI**. Une petite VM Debian ou
 
 Une clé de l'API OpenAI ne donne pas accès au quota de l'abonnement Codex : il faut connecter **Codex CLI avec le même compte ChatGPT** que celui utilisé dans l'application.
 
+## Essai sur un Mac
+
+Si Codex CLI est déjà connecté sur le Mac, lancez le relais dans un terminal :
+
+```sh
+codex login status
+python3 bridge/codex_quota_bridge.py --bind IP_LOCALE_DU_MAC
+```
+
+Le relais crée `.codex-bridge/token`. Renseignez `codex_bridge_url` dans `secrets.yaml` avec l'IP locale du Mac et ce jeton, puis flashez `horloge-codex.yaml`. Le Mac doit rester allumé pendant cet essai. Plus tard, vous pourrez déplacer le relais sur la VM et reflasher l'écran avec sa nouvelle URL.
+
 ## Sur la VM Debian/Ubuntu
 
 La VM doit avoir une adresse IP locale stable (ou une réservation DHCP), un accès Internet et SSH. Aucune redirection de port Internet n'est nécessaire.
@@ -70,3 +81,5 @@ esphome run horloge-codex.yaml
 Balayez deux fois de droite vers la gauche depuis l'horloge pour atteindre la page Codex. Les chiffres sont actualisés chaque minute. Si la VM est arrêtée ou inaccessible, la page affiche « SERVEUR HORS LIGNE » ; l'horloge et le chronomètre continuent de fonctionner.
 
 Gardez le port `8765` accessible **uniquement sur le réseau local**. Le jeton du relais n'est pas une clé OpenAI et ne donne pas accès au compte, mais il permet de consulter vos pourcentages de quota.
+
+Le petit [logo OpenAI](../assets/openai-white-monoblossom.svg) provient du [kit officiel OpenAI](https://cdn.openai.com/brand/OpenAI-Logos-2025.zip). Il désigne le service dont les quotas sont affichés ; ce projet indépendant n'est pas affilié à OpenAI.
