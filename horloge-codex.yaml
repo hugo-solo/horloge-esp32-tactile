@@ -1,0 +1,386 @@
+esphome:
+  name: horloge-tactile
+  friendly_name: Horloge tactile
+  on_boot:
+    priority: -100
+    then:
+      - script.execute: appliquer_luminosite
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  on_connect:
+    then:
+      - script.execute: rafraichir_quota
+
+logger:
+
+http_request:
+  timeout: 10s
+
+time:
+  - platform: sntp
+    id: heure_reseau
+    timezone: Europe/Paris
+    on_time_sync:
+      then:
+        - script.execute: appliquer_luminosite
+    on_time:
+      - seconds: 0
+        minutes: 0
+        hours: 0
+        then:
+          - script.execute: appliquer_luminosite
+      - seconds: 0
+        minutes: 30
+        hours: 8
+        then:
+          - script.execute: appliquer_luminosite
+
+spi:
+  type: quad
+  interface: hardware
+  clk_pin: GPIO47
+  data_pins: [GPIO21, GPIO48, GPIO40, GPIO39]
+
+i2c:
+  sda: GPIO4
+  scl: GPIO8
+  frequency: 400kHz
+
+output:
+  - platform: ledc
+    id: retroeclairage
+    pin: GPIO1
+    frequency: 1220Hz
+
+script:
+  - id: appliquer_luminosite
+    then:
+      - lambda: |-
+          auto maintenant = id(heure_reseau).now();
+          bool nuit = !maintenant.is_valid() || maintenant.hour < 8 ||
+                      (maintenant.hour == 8 && maintenant.minute < 30);
+          id(retroeclairage).set_level(nuit ? 0.02f : 1.0f);
+  - id: rafraichir_quota
+    mode: single
+    then:
+      - http_request.get:
+          url: !secret codex_bridge_url
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  bool ok = false;
+                  if (response->status_code == 200) {
+                    ok = json::parse_json(body, [](JsonObject root) -> bool {
+                      if (root["remaining_5h"].isNull() || root["reset_5h"].isNull())
+                        return false;
+                      id(quota_restant_5h) = root["remaining_5h"].as<int>();
+                      id(quota_reset_5h) = root["reset_5h"].as<uint32_t>();
+                      id(quota_restant_semaine) = root["remaining_week"].isNull()
+                          ? -1 : root["remaining_week"].as<int>();
+                      return true;
+                    });
+                  }
+                  id(quota_disponible) = ok;
+                  if (id(page_active) == 2) id(ecran).update();
+          on_error:
+            then:
+              - lambda: |-
+                  id(quota_disponible) = false;
+                  if (id(page_active) == 2) id(ecran).update();
+
+globals:
+  - id: page_active
+    type: int
+    initial_value: '0'
+  - id: touche_depart_x
+    type: int
+    initial_value: '0'
+  - id: touche_depart_y
+    type: int
+    initial_value: '0'
+  - id: touche_fin_x
+    type: int
+    initial_value: '0'
+  - id: touche_fin_y
+    type: int
+    initial_value: '0'
+  - id: chrono_actif
+    type: bool
+    initial_value: 'false'
+  - id: chrono_depart_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: chrono_ecoule_ms
+    type: uint32_t
+    initial_value: '0'
+  - id: quota_disponible
+    type: bool
+    initial_value: 'false'
+  - id: quota_restant_5h
+    type: int
+    initial_value: '0'
+  - id: quota_reset_5h
+    type: uint32_t
+    initial_value: '0'
+  - id: quota_restant_semaine
+    type: int
+    initial_value: '-1'
+
+interval:
+  - interval: 100ms
+    then:
+      - if:
+          condition:
+            lambda: 'return id(page_active) == 1 && id(chrono_actif);'
+          then:
+            - component.update: ecran
+  - interval: 60s
+    then:
+      - script.execute: rafraichir_quota
+
+font:
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: chiffres_gras
+    size: 160
+    bpp: 4
+    glyphs: "0123456789:-"
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: chiffres_chrono
+    size: 132
+    bpp: 4
+    glyphs: "0123456789:."
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: chiffres_chrono_long
+    size: 100
+    bpp: 4
+    glyphs: "0123456789:"
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 700
+    id: texte_commandes
+    size: 28
+    bpp: 4
+    glyphs: "AEPRSTU"
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: chiffres_quota
+    size: 132
+    bpp: 4
+    glyphs: "0123456789%-"
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 700
+    id: texte_quota
+    size: 27
+    bpp: 4
+    glyphs: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:%-"
+
+display:
+  - platform: mipi_spi
+    id: ecran
+    model: JC3248W535
+    bus_mode: quad
+    cs_pin: GPIO45
+    rotation: 270
+    update_interval: 1s
+    lambda: |-
+      it.fill(Color::BLACK);
+      const int largeur = it.get_width();
+      const int centre_x = largeur / 2;
+
+      auto dessiner_horloge = [&]() {
+        auto maintenant = id(heure_reseau).now();
+        if (maintenant.is_valid()) {
+          it.strftime(centre_x, it.get_height() / 2 - 6,
+                      id(chiffres_gras), Color::WHITE,
+                      TextAlign::CENTER, "%H:%M", maintenant);
+        } else {
+          it.print(centre_x, it.get_height() / 2 - 6,
+                   id(chiffres_gras), Color::WHITE,
+                   TextAlign::CENTER, "--:--");
+        }
+      };
+
+      auto dessiner_chrono = [&]() {
+        uint32_t ecoule = id(chrono_ecoule_ms);
+        if (id(chrono_actif)) {
+          ecoule += (uint32_t) (millis() - id(chrono_depart_ms));
+        }
+        char valeur[20];
+        const uint32_t secondes = ecoule / 1000;
+        const uint32_t minutes = secondes / 60;
+        if (minutes < 100) {
+          snprintf(valeur, sizeof(valeur), "%02lu:%02lu.%01lu",
+                   (unsigned long) minutes,
+                   (unsigned long) (secondes % 60),
+                   (unsigned long) ((ecoule / 100) % 10));
+          it.print(centre_x, 118, id(chiffres_chrono), Color::WHITE,
+                   TextAlign::CENTER, valeur);
+        } else {
+          snprintf(valeur, sizeof(valeur), "%02lu:%02lu:%02lu",
+                   (unsigned long) (secondes / 3600),
+                   (unsigned long) ((secondes / 60) % 60),
+                   (unsigned long) (secondes % 60));
+          it.print(centre_x, 118, id(chiffres_chrono_long), Color::WHITE,
+                   TextAlign::CENTER, valeur);
+        }
+
+        // Deux grandes commandes faciles à toucher, sans encadré.
+        if (id(chrono_actif)) {
+          it.filled_rectangle(132, 203, 11, 42, Color::WHITE);
+          it.filled_rectangle(156, 203, 11, 42, Color::WHITE);
+        } else {
+          it.filled_triangle(134, 200, 134, 248, 174, 224, Color::WHITE);
+        }
+        it.print(150, 276, id(texte_commandes), Color::WHITE,
+                 TextAlign::CENTER, id(chrono_actif) ? "PAUSE" : "START");
+
+        it.filled_ring(330, 224, 29, 24, Color::WHITE);
+        it.filled_rectangle(334, 190, 35, 22, Color::BLACK);
+        it.filled_triangle(348, 197, 352, 221, 331, 210, Color::WHITE);
+        it.print(330, 276, id(texte_commandes), Color::WHITE,
+                 TextAlign::CENTER, "RESET");
+      };
+
+      auto dessiner_quota = [&]() {
+        it.print(centre_x, 39, id(texte_quota), Color::WHITE,
+                 TextAlign::CENTER, "CODEX");
+        if (!id(quota_disponible)) {
+          it.print(centre_x, 140, id(chiffres_quota), Color::WHITE,
+                   TextAlign::CENTER, "--%");
+          it.print(centre_x, 249, id(texte_quota), Color::WHITE,
+                   TextAlign::CENTER, "SERVEUR HORS LIGNE");
+          return;
+        }
+
+        char pourcentage[8];
+        snprintf(pourcentage, sizeof(pourcentage), "%d%%", id(quota_restant_5h));
+        it.print(centre_x, 140, id(chiffres_quota), Color::WHITE,
+                 TextAlign::CENTER, pourcentage);
+        it.print(centre_x, 215, id(texte_quota), Color::WHITE,
+                 TextAlign::CENTER, "QUOTA 5 H");
+
+        auto maintenant = id(heure_reseau).now();
+        if (maintenant.is_valid()) {
+          int64_t secondes = (int64_t) id(quota_reset_5h) - maintenant.timestamp;
+          if (secondes < 0) secondes = 0;
+          uint32_t minutes = ((uint32_t) secondes + 59) / 60;
+          char reset[30];
+          snprintf(reset, sizeof(reset), "RESET DANS %02lu:%02lu",
+                   (unsigned long) (minutes / 60),
+                   (unsigned long) (minutes % 60));
+          it.print(centre_x, 251, id(texte_quota), Color::WHITE,
+                   TextAlign::CENTER, reset);
+        } else {
+          it.print(centre_x, 251, id(texte_quota), Color::WHITE,
+                   TextAlign::CENTER, "RESET DANS --:--");
+        }
+        if (id(quota_restant_semaine) >= 0) {
+          char semaine[20];
+          snprintf(semaine, sizeof(semaine), "SEMAINE %d%%",
+                   id(quota_restant_semaine));
+          it.print(centre_x, 281, id(texte_quota), Color::WHITE,
+                   TextAlign::CENTER, semaine);
+        }
+      };
+
+      if (id(page_active) == 0) dessiner_horloge();
+      else if (id(page_active) == 1) dessiner_chrono();
+      else dessiner_quota();
+
+      // Indicateur de page discret, tout en bas de l'écran.
+      it.circle(224, 304, 3, Color::WHITE);
+      it.circle(240, 304, 3, Color::WHITE);
+      it.circle(256, 304, 3, Color::WHITE);
+      it.filled_circle(224 + 16 * id(page_active), 304, 3, Color::WHITE);
+
+touchscreen:
+  - platform: axs15231
+    id: tactile
+    display: ecran
+    interrupt_pin: GPIO3
+    reset_pin: GPIO38
+    calibration:
+      x_min: 0
+      x_max: 480
+      y_min: 0
+      y_max: 320
+    transform:
+      swap_xy: true
+      mirror_x: true
+      mirror_y: false
+    on_touch:
+      - lambda: |-
+          id(touche_depart_x) = touch.x;
+          id(touche_depart_y) = touch.y;
+          id(touche_fin_x) = touch.x;
+          id(touche_fin_y) = touch.y;
+          ESP_LOGI("chrono_touch", "touch x=%d y=%d raw=%d,%d",
+                   touch.x, touch.y, touch.x_raw, touch.y_raw);
+    on_update:
+      - lambda: |-
+          for (const auto &point : touches) {
+            if (point.state == 1 || point.state == 2) {
+              id(touche_fin_x) = point.x;
+              id(touche_fin_y) = point.y;
+              break;
+            }
+          }
+    on_release:
+      - lambda: |-
+          const int dx = id(touche_fin_x) - id(touche_depart_x);
+          const int dy = id(touche_fin_y) - id(touche_depart_y);
+          if (abs(dx) >= 80 && abs(dx) > abs(dy) * 3 / 2) {
+            // Balayer de droite à gauche avance d'une page.
+            if (dx < 0 && id(page_active) < 2) id(page_active)++;
+            else if (dx > 0 && id(page_active) > 0) id(page_active)--;
+          } else if (abs(dx) < 100 && abs(dy) < 100) {
+            const int x = id(touche_fin_x);
+            const int y = id(touche_fin_y);
+            if (y >= 295 && x >= 208 && x <= 272) {
+              id(page_active) = x < 232 ? 0 : (x < 248 ? 1 : 2);
+            } else if (id(page_active) == 1 && y >= 130) {
+              if (x < 240) {
+                if (id(chrono_actif)) {
+                  id(chrono_ecoule_ms) += (uint32_t) (millis() - id(chrono_depart_ms));
+                  id(chrono_actif) = false;
+                } else {
+                  id(chrono_depart_ms) = millis();
+                  id(chrono_actif) = true;
+                }
+              } else {
+                id(chrono_actif) = false;
+                id(chrono_ecoule_ms) = 0;
+              }
+            }
+          }
+          ESP_LOGI("chrono_touch", "release x=%d y=%d dx=%d dy=%d page=%d running=%d",
+                   id(touche_fin_x), id(touche_fin_y), dx, dy,
+                   id(page_active), id(chrono_actif));
+      - component.update: ecran

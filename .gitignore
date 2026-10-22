@@ -5,3 +5,4 @@ secrets.yaml
 *.log
 *.bin
 *.elf
+.codex-bridge/

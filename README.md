@@ -16,6 +16,8 @@ Une horloge et un chronomètre minimalistes pour l'écran tactile **Guition JC32
 - **Mode nuit** : rétroéclairage à 2 % de 00:00 à 08:29, puis à 100 % dès 08:30. Au démarrage, il reste faible jusqu'à la synchronisation de l'heure.
 - Interface blanche sur fond noir, sans animation de transition.
 
+Une [variante à trois pages](bridge/README.md) ajoute un écran « CODEX » avec le pourcentage restant sur 5 heures, le temps avant la remise à zéro et le quota hebdomadaire. Elle utilise un petit relais sur un serveur local allumé en permanence ; la configuration principale à deux pages n'en a pas besoin.
+
 ## Matériel
 
 Cette configuration a été réalisée pour la carte **JC3248W535C / JC3248W535C_I_Y** avec ESP32-S3 et écran tactile 480 × 320. Le port USB-C sert à installer le programme et à alimenter l'écran. Vérifiez la référence imprimée sur votre carte avant de flasher : une variante peut avoir des broches différentes.
@@ -96,6 +98,8 @@ Après une modification, relancez `esphome run horloge.yaml` avec l'écran branc
 | Fichier | Rôle |
 | --- | --- |
 | [`horloge.yaml`](horloge.yaml) | Configuration ESPHome et interface |
+| [`horloge-codex.yaml`](horloge-codex.yaml) | Variante à trois pages avec quotas Codex |
+| [`bridge/`](bridge/README.md) | Relais de quotas pour une VM Debian/Ubuntu |
 | [`secrets.example.yaml`](secrets.example.yaml) | Modèle pour les identifiants Wi-Fi |
 | [`requirements.txt`](requirements.txt) | Version d'ESPHome utilisée pour ce projet |
 | [`docs/apercu.svg`](docs/apercu.svg) | Illustration de l'interface |

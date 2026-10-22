@@ -1,0 +1,15 @@
+[Unit]
+Description=Relais local des quotas Codex pour l'horloge ESP32
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=%h/horloge-esp32-tactile
+ExecStart=/usr/bin/python3 %h/horloge-esp32-tactile/bridge/codex_quota_bridge.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
