@@ -6,3 +6,4 @@ secrets.yaml
 *.bin
 *.elf
 .codex-bridge/
+__pycache__/
