@@ -243,22 +243,6 @@ font:
     id: texte_statut_codex
     size: 18
     bpp: 4
-    glyphs: " 0123456789%usedhm-"
-  - file:
-      type: gfonts
-      family: Roboto
-      weight: 700
-    id: titre_spotify_grand
-    size: 28
-    bpp: 4
-    glyphsets: [GF_Latin_Core]
-  - file:
-      type: gfonts
-      family: Roboto
-      weight: 700
-    id: titre_spotify_petit
-    size: 21
-    bpp: 4
     glyphsets: [GF_Latin_Core]
 
 image:
@@ -278,8 +262,7 @@ display:
     update_interval: 1s
     lambda: |-
       it.fill(Color::BLACK);
-      const int largeur = it.get_width();
-      const int centre_x = largeur / 2;
+      const int centre_x = it.get_width() / 2;
 
       auto dessiner_horloge = [&]() {
         auto maintenant = id(heure_reseau).now();
@@ -294,15 +277,8 @@ display:
         }
 
         if (id(spotify_actif) && !id(spotify_titre).empty()) {
-          const char *titre = id(spotify_titre).c_str();
-          int x1, y1, largeur_titre, hauteur_titre;
-          it.get_text_bounds(centre_x, 38, titre, id(titre_spotify_grand),
-                             TextAlign::CENTER, &x1, &y1,
-                             &largeur_titre, &hauteur_titre);
-          auto police = largeur_titre <= largeur - 24
-              ? id(titre_spotify_grand) : id(titre_spotify_petit);
-          it.print(centre_x, 38, police, Color::WHITE,
-                   TextAlign::CENTER, titre);
+          it.print(centre_x, 12, id(texte_statut_codex), Color::WHITE,
+                   TextAlign::CENTER, id(spotify_titre).c_str());
         }
 
         if (id(quota_disponible) && maintenant.is_valid()) {
